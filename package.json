@@ -1,11 +1,20 @@
 {
   "name": "amo",
   "version": "0.0.0",
-  "main": "index.js",
+  "main": "dist/amo.js",
+  "scripts": {
+    "dist": "bili ./src/index.js -d dist -n amo --format umd --module-name AMO --compress",
+    "dev": "nodemon -x \"npm run dist\" --watch src"
+  },
   "repository": {
     "url": "git@github.com:fengzilong/amo.git",
     "type": "git"
   },
   "author": "mo <feng_zilong@163.com>",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "bili": "^0.8.0",
+    "onchange": "^3.2.0",
+    "regux": "0.0.2"
+  }
 }
