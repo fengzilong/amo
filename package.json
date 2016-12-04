@@ -1,6 +1,6 @@
 {
   "name": "amo",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "main": "dist/amo.js",
   "scripts": {
     "dist": "bili ./src/index.js -d dist -n amo --format umd --module-name AMO --compress",
