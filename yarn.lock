@@ -1296,9 +1296,9 @@ registry-url@^3.0.3:
   dependencies:
     rc "^1.0.1"
 
-regux@0.0.3:
-  version "0.0.3"
-  resolved "https://registry.yarnpkg.com/regux/-/regux-0.0.3.tgz#68ebfc56893c875d8fd1d44c7ac7a3d728fd0c28"
+regux@0.0.4:
+  version "0.0.4"
+  resolved "https://registry.yarnpkg.com/regux/-/regux-0.0.4.tgz#497b8659c97b1451c5adcf1524762161be3c4df9"
 
 repeat-element@^1.1.2:
   version "1.1.2"
