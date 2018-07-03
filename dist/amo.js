@@ -73,10 +73,37 @@ var makeComputed = function ( target, getters ) {
 	Object.assign( target.computed || {}, handleComputed( getters ) );
 };
 
+var Scheduler = function Scheduler() {
+	this.t = null;
+	this.tasks = [];
+};
+Scheduler.prototype.add = function add ( task ) {
+	this.tasks.push( task );
+};
+Scheduler.prototype.run = function run ( main ) {
+		var this$1 = this;
+
+	if ( this.t ) {
+		clearTimeout( this.t );
+	}
+
+	this.t = setTimeout( function () {
+		main();
+
+		this$1.tasks.forEach( function ( task, i ) {
+			if ( typeof task === 'function' ) {
+				task();
+				this$1.tasks[ i ] = null;
+			}
+		} );
+		this$1.tasks.length = 0;
+	}, 0 );
+};
+
 // Credits: vue/vuex
 
 var devtoolsPlugin = function () { return function (store) {
-	var devtools = window.__REO_DEVTOOLS_HOOK__;
+	var devtools = window && window.__REO_DEVTOOLS_HOOK__;
 
 	if ( !devtools ) {
 		return;
@@ -119,15 +146,16 @@ var Store = function Store( ref ) {
 		_plugins: plugins,
 		_subscribers: [],
 		_viewUpdateSubscribers: [],
-		_queue: [],
-		_updateTid: null,
+		scheduler: new Scheduler(),
 	} );
 
+	// register modules
 	Object.keys( modules )
 		.forEach( function (name) { return this$1.registerModule( name, modules[ name ] ); } );
 
-	// execute plugins
+	// execute devtools manually
 	devtoolsPlugin()( this );
+	// execute other plugins
 	plugins.forEach( function (plugin) { return this$1.use( plugin ); } );
 };
 Store.prototype.use = function use ( plugin ) {
@@ -140,7 +168,7 @@ Store.prototype.replaceState = function replaceState ( newState, ref ) {
 	this._state = newState;
 
 	if ( !silent ) {
-		this.updateView();
+		this.syncView();
 	}
 };
 Store.prototype.getState = function getState () {
@@ -149,30 +177,12 @@ Store.prototype.getState = function getState () {
 Store.prototype.getGetters = function getGetters () {
 	return this._getters;
 };
-// watch( getter, cb, options ) {
-//
-// }
-Store.prototype.nextTick = function nextTick () {
-		var arguments$1 = arguments;
-
-		var args = [], len = arguments.length;
-		while ( len-- ) { args[ len ] = arguments$1[ len ]; }
-
-	return this.queue.apply( this, args );
-};
-Store.prototype.queue = function queue ( fn ) {
-	this._queue.push( fn );
-};
-Store.prototype.dequeue = function dequeue () {
-	var queue = this._queue;
-	queue.forEach( function (v) {
-		if ( typeof v === 'function' ) {
-			v();
-		}
-	} );
-	this._queue.length = 0;
+Store.prototype.nextTick = function nextTick ( fn ) {
+	this.scheduler.add( fn );
 };
 Store.prototype.dispatch = function dispatch ( type, payload ) {
+		var this$1 = this;
+
 	var action;
 
 	if ( typeof type === 'string' ) {
@@ -190,7 +200,17 @@ Store.prototype.dispatch = function dispatch ( type, payload ) {
 	}
 
 	return act( {
+		getState: this.getState.bind( this ),
 		state: this.getState(),
+		get: function (key) {
+			var getters = this$1.getGetters();
+			var getterFn = getters[ key ];
+			if ( typeof getterFn !== 'function' ) {
+				return;
+			}
+
+			return getterFn( this$1.getState() );
+		},
 		commit: this.commit.bind( this ),
 		dispatch: this.dispatch.bind( this ),
 		nextTick: this.nextTick.bind( this ),
@@ -201,6 +221,7 @@ Store.prototype.commit = function commit ( type, payload ) {
 
 	var mutation;
 
+	// e.g. mutation -> { type: 'foo', payload: 'bar' }
 	if ( typeof type === 'string' ) {
 		mutation = { type: type, payload: payload };
 	} else if ( isValidMutation( type ) ) {
@@ -209,8 +230,6 @@ Store.prototype.commit = function commit ( type, payload ) {
 		return console.error( 'invalid commit params', arguments );
 	}
 
-	// mutation -> { type: 'foo', payload: 'bar' }
-
 	var reducer = this._reducers[ mutation.type ];
 	if ( typeof reducer === 'function' ) {
 		var state = this.getState();
@@ -218,23 +237,15 @@ Store.prototype.commit = function commit ( type, payload ) {
 
 		reducer( moduleState, mutation.payload );
 
-		// notify subscribers that state has been changed
+		// notify subscribers state has been changed
 		this._applySubscribers( mutation, state );
 
-		// try to update view
-		if ( this._updateTid ) {
-			clearTimeout( this._updateTid );
-		}
-
-		this._updateTid = setTimeout( function () {
-			this$1.updateView();
-			this$1.dequeue();
-		}, 0 );
+		this.scheduler.run( function () { return this$1.syncView(); } );
 	} else {
 		console.error( 'reducer', mutation.type, 'not found' );
 	}
 };
-Store.prototype.updateView = function updateView () {
+Store.prototype.syncView = function syncView () {
 	this._host.$update();
 	this._viewUpdateSubscribers.forEach( function (fn) { return fn(); } );
 };
@@ -270,7 +281,9 @@ Store.prototype.registerModule = function registerModule ( name, module ) {
 	for ( var j in reducers ) {
 		reducers[ j ].key = name;
 	}
+
 	reducers = addNSForReducers( reducers, name );
+
 	// attach module reducers to root reducers
 	Object.assign( this._reducers, reducers );
 };
@@ -334,7 +347,7 @@ var regux = function (Component) {
 				}
 
 				if ( !store ) {
-					return console.error( 'store not found' );
+					return console.warn( 'store not found' );
 				}
 
 				this.$store = store;
