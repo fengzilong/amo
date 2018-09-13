@@ -1298,9 +1298,9 @@ registry-url@^3.0.3:
   dependencies:
     rc "^1.0.1"
 
-regux@0.1.5:
-  version "0.1.5"
-  resolved "https://registry.yarnpkg.com/regux/-/regux-0.1.5.tgz#2d6b4cf40d95825dd0225100c3a7af2fbcf0fc67"
+regux@0.1.6:
+  version "0.1.6"
+  resolved "http://registry.npm.taobao.org/regux/download/regux-0.1.6.tgz#8641fa27f7699c1bfae3eb078213f57d5f637d5a"
 
 repeat-element@^1.1.2:
   version "1.1.2"

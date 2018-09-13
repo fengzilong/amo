@@ -15,6 +15,6 @@
   "devDependencies": {
     "bili": "^0.8.0",
     "onchange": "^3.2.0",
-    "regux": "0.1.5"
+    "regux": "0.1.6"
   }
 }
