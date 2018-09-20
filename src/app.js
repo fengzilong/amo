@@ -4,7 +4,9 @@ import logger from 'regux/logger';
 export default class App {
 	constructor() {
 		const store = new regux.Store();
-		store.use( logger() );
+		if ( process.env.NODE_ENV === 'development' ) {
+			store.use( logger() );
+		}
 		this._store = store;
 	}
 	getStore() {
