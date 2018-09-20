@@ -440,7 +440,9 @@ return createLogger;
 
 var App = function App() {
 	var store = new regux.Store();
-	store.use( logger() );
+	if ( process.env.NODE_ENV === 'development' ) {
+		store.use( logger() );
+	}
 	this._store = store;
 };
 App.prototype.getStore = function getStore () {
